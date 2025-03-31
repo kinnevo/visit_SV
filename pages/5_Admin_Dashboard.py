@@ -71,20 +71,36 @@ else:
             last_message = conv['messages'][-1]['content'] if conv['messages'] else "No messages"
             last_message = last_message[:100] + "..." if len(last_message) > 100 else last_message
             
-            # Create clickable link that opens in new tab
-            conv_link = f'<a href="?conv={user_id}" target="_blank">View Conversation #{idx}</a>'
-            
             summary_data.append({
                 'Conversation #': idx,
                 'User ID': user_id,
                 'Message Count': message_count,
                 'Last Updated': last_updated,
-                'Last Message': last_message,
-                'Action': conv_link
+                'Last Message': last_message
             })
         
         df = pd.DataFrame(summary_data)
-        st.dataframe(df, use_container_width=True)
+        
+        # Add a clickable column for actions
+        df['Action'] = df['Conversation #'].apply(lambda x: f'View Conversation #{x}')
+        
+        # Display the dataframe with clickable links
+        for idx, row in df.iterrows():
+            col1, col2, col3, col4, col5, col6 = st.columns([1, 2, 1, 2, 3, 1])
+            with col1:
+                st.write(row['Conversation #'])
+            with col2:
+                st.write(row['User ID'])
+            with col3:
+                st.write(row['Message Count'])
+            with col4:
+                st.write(row['Last Updated'])
+            with col5:
+                st.write(row['Last Message'])
+            with col6:
+                if st.button('View', key=f'view_{idx}'):
+                    st.session_state.selected_conversation = conversations[idx]
+                    st.switch_page("pages/6_View_Conversation.py")
     
     with tab2:
         # Allow selecting a specific conversation to view

@@ -134,10 +134,10 @@ load_dotenv()
 init_db()
 
 # LangFlow connection settings
-BASE_API_URL = "http://34.59.108.214:7860/"
-FLOW_ID = "75b5f45c-e41d-4ba4-86a1-9539e3928056"
-APPLICATION_TOKEN = os.environ.get("OPENAI_API_KEY")
-ENDPOINT = "75b5f45c-e41d-4ba4-86a1-9539e3928056"  # The endpoint name of the flow
+BASE_API_URL = os.environ.get("BASE_API_URL")
+FLOW_ID = os.environ.get("FLOW_ID")
+APPLICATION_TOKEN = os.environ.get("APPLICATION_TOKEN")
+ENDPOINT = os.environ.get("ENDPOINT")  # The endpoint name of the flow
 
 # Initialize session state for conversation memory and user tracking
 if 'conversation_history' not in st.session_state:

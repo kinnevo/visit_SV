@@ -66,64 +66,14 @@ if st.session_state.get('username') != 'jazo':
     st.error("Access denied. This page is only available for administrators.")
     st.stop()
 
-# Get conversation ID or number from URL parameters
-if 'conv' not in st.query_params and 'num' not in st.query_params:
-    st.error("No conversation selected.")
+# Get the selected conversation from session state
+selected_conv = st.session_state.get('selected_conversation')
+if not selected_conv:
+    st.error("No conversation selected. Please go back to the Admin Dashboard.")
     st.stop()
 
-conversation = None
-if 'num' in st.query_params:
-    try:
-        conv_number = int(st.query_params['num'])
-        conversation = get_conversation_by_number(conv_number)
-    except ValueError:
-        st.error("Invalid conversation number.")
-        st.stop()
-else:
-    user_id = st.query_params['conv']
-    conversation = get_conversation(user_id)
-
-if not conversation:
-    st.error("Conversation not found.")
-    st.stop()
-
-# Add a button to show/hide the detailed view
-if 'show_details' not in st.session_state:
-    st.session_state.show_details = False
-
-if st.button("View Conversation Details", type="primary"):
-    st.session_state.show_details = not st.session_state.show_details
-
-if st.session_state.show_details:
-    with st.expander("Conversation Details", expanded=True):
-        st.title(f"Detailed Conversation with {conversation['user_id']}")
-        st.write(f"Last updated: {conversation['last_updated']}")
-        
-        # Display conversation statistics
-        total_messages = len(conversation['messages'])
-        user_messages = len([m for m in conversation['messages'] if m['role'] == 'user'])
-        assistant_messages = len([m for m in conversation['messages'] if m['role'] == 'assistant'])
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Messages", total_messages)
-        with col2:
-            st.metric("User Messages", user_messages)
-        with col3:
-            st.metric("Assistant Messages", assistant_messages)
-        
-        # Display messages in a more detailed format
-        st.subheader("Message Timeline")
-        for message in conversation['messages']:
-            role = message['role']
-            content = message['content']
-            timestamp = message.get('timestamp', 'No timestamp')
-            
-            with st.expander(f"{role.title()} - {timestamp}"):
-                st.markdown(content)
-
-st.title(f"Conversation with {conversation['user_id']} 💬")
-st.write(f"Last updated: {conversation['last_updated']}")
+st.title(f"Conversation with {selected_conv['user_id']} 💬")
+st.write(f"Last updated: {selected_conv['last_updated']}")
 
 # Create a container with grey background for the conversation
 st.markdown("""
@@ -131,7 +81,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Create a chat-like display
-for message in conversation['messages']:
+for message in selected_conv['messages']:
     role = message['role']
     content = message['content']
     timestamp = message.get('timestamp', 'No timestamp')
@@ -152,4 +102,8 @@ for message in conversation['messages']:
         """, unsafe_allow_html=True)
 
 # Close the container
-st.markdown("</div>", unsafe_allow_html=True) 
+st.markdown("</div>", unsafe_allow_html=True)
+
+# Add a back button
+if st.button("Back to Admin Dashboard"):
+    st.switch_page("pages/5_Admin_Dashboard.py") 
