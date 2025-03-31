@@ -15,6 +15,8 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
 if 'username' not in st.session_state:
     st.session_state.username = None
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = 'user'
 
 def load_users():
     if os.path.exists('users.json'):
@@ -31,6 +33,7 @@ def login(username, password):
     if username in users and users[username]['password'] == password:
         st.session_state.authenticated = True
         st.session_state.username = username
+        st.session_state.user_role = users[username].get('role', 'user')
         return True
     return False
 
@@ -38,7 +41,12 @@ def register(username, password):
     users = load_users()
     if username in users:
         return False
-    users[username] = {'password': password}
+    # Set default role as 'user', except for 'jazo' which is 'admin'
+    role = 'admin' if username == 'jazo' else 'user'
+    users[username] = {
+        'password': password,
+        'role': role
+    }
     save_users(users)
     return True
 
@@ -72,9 +80,11 @@ with st.sidebar:
                     st.error("Username already exists")
     else:
         st.write(f"Welcome, {st.session_state.username}!")
+        st.write(f"Role: {st.session_state.user_role}")
         if st.button("Logout"):
             st.session_state.authenticated = False
             st.session_state.username = None
+            st.session_state.user_role = 'user'
             st.rerun()
 
 # Main content

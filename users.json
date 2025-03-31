@@ -1,1 +1,1 @@
-{"jazo": {"password": "jazo"}, "jorge": {"password": "jorge"}}
+{"jazo": {"password": "jazo", "role": "admin"}, "jorge": {"password": "jorge", "role": "user"}, "luis": {"password": "luis", "role": "user"}}

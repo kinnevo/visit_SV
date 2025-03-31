@@ -35,12 +35,12 @@ st.set_page_config(
     layout="wide"
 )
 
-# Check if user is authenticated and is jazo
+# Check if user is authenticated and is admin
 if not st.session_state.get('authenticated', False):
     st.warning("Please login to access this page.")
     st.stop()
 
-if st.session_state.get('username') != 'jazo':
+if st.session_state.get('user_role') != 'admin':
     st.error("Access denied. This page is only available for administrators.")
     st.stop()
 
