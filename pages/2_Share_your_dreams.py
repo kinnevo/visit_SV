@@ -167,25 +167,23 @@ if not st.session_state.get('authenticated', False):
 st.title("Interactive Visit Planning Chat 💬")
 
 # Add session management UI
-col1, col2 = st.columns([3, 1])
-with col1:
+if st.button("New Session"):
+    st.session_state.session_id = str(uuid.uuid4())
+    st.session_state.conversation_history = []
+    st.rerun()
+
+if st.session_state.get('username') == 'jazo':
     st.subheader("Current Session")
     st.write(f"Session ID: {st.session_state.session_id[:8]}...")
 
-with col2:
-    if st.button("New Session"):
-        st.session_state.session_id = str(uuid.uuid4())
-        st.session_state.conversation_history = []
-        st.rerun()
-
-# Display user's previous sessions
-st.subheader("Your Previous Sessions")
-sessions = get_user_sessions(username)
-if sessions:
-    for session in sessions:
-        st.write(f"Session: {session['session_id'][:8]}... (Last updated: {session['last_updated']})")
-else:
-    st.write("No previous sessions found.")
+    # Display user's previous sessions
+    st.subheader("Your Previous Sessions")
+    sessions = get_user_sessions(username)
+    if sessions:
+        for session in sessions:
+            st.write(f"Session: {session['session_id'][:8]}... (Last updated: {session['last_updated']})")
+    else:
+        st.write("No previous sessions found.")
 
 # User input
 message = st.text_area("Message", placeholder="Ask something...")
