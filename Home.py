@@ -53,6 +53,7 @@ def register(username, password):
 # Main app
 st.title("Welcome to Silicon Valley Visit Planner 🌉")
 
+
 # Sidebar for authentication
 with st.sidebar:
     st.header("Authentication")
@@ -132,3 +133,13 @@ if st.session_state.authenticated:
     """)
 else:
     st.warning("Please login or register to access the full features of the app.") 
+
+    st.markdown("""
+    ## Register an account to explore alternatives to visit Silicon Valley
+    
+    ## Then Login to start a conversation
+                
+    ## Start a conversation by choosing the option "Share your Dreams" 
+    Then type the reason why do you want to visit Silicon Valley and keep a conversation.
+    
+    """)
