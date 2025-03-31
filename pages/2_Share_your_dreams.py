@@ -4,9 +4,12 @@ import json
 from dotenv import load_dotenv
 from datetime import datetime
 import os
+from database import init_db, save_conversation, get_conversation, get_user_sessions
+from typing import List, Optional
+import uuid
 
 # The rest of your existing functions...
-def run_flow(message: str, agent_name: str = "User_1", history: list = None) -> dict:
+def run_flow(message: str, agent_name: str = "User_1", history: Optional[List[dict]] = None) -> dict:
     """
     Run the LangFlow with the given message and conversation history.
     
@@ -52,8 +55,8 @@ def run_flow(message: str, agent_name: str = "User_1", history: list = None) -> 
     except Exception as e:
         raise e
 
-def add_to_history(role: str, content: str, user: str = None):
-    """Add a message to the conversation history."""
+def add_to_history(role: str, content: str, user: Optional[str] = None):
+    """Add a message to the conversation history and save to database."""
     message = {
         "role": role,
         "content": content,
@@ -62,6 +65,14 @@ def add_to_history(role: str, content: str, user: str = None):
     }
     
     st.session_state.conversation_history.append(message)
+    
+    # Save updated conversation to database
+    username = st.session_state.get('username')
+    if not username:
+        st.error("User not authenticated")
+        return
+    session_id = st.session_state.get('session_id', str(uuid.uuid4()))
+    save_conversation(username, session_id, st.session_state.conversation_history)
 
 def display_conversation():
     """Display the conversation history in the Streamlit UI."""
@@ -119,7 +130,9 @@ def display_conversation():
 # Load environment variables
 load_dotenv()
 
-# Continue with your existing code...
+# Initialize database
+init_db()
+
 # LangFlow connection settings
 BASE_API_URL = "http://34.59.108.214:7860/"
 FLOW_ID = "75b5f45c-e41d-4ba4-86a1-9539e3928056"
@@ -130,6 +143,15 @@ ENDPOINT = "75b5f45c-e41d-4ba4-86a1-9539e3928056"  # The endpoint name of the fl
 if 'conversation_history' not in st.session_state:
     st.session_state.conversation_history = []
 
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+# Load existing conversation from database
+username = st.session_state.get('username')
+if not username:
+    st.error("User not authenticated")
+    st.stop()
+st.session_state.conversation_history = get_conversation(username, st.session_state.session_id)
 
 st.set_page_config(
     page_title="Interactive Chat - Silicon Valley Visit Planner",
@@ -144,13 +166,33 @@ if not st.session_state.get('authenticated', False):
 
 st.title("Interactive Visit Planning Chat 💬")
 
+# Add session management UI
+col1, col2 = st.columns([3, 1])
+with col1:
+    st.subheader("Current Session")
+    st.write(f"Session ID: {st.session_state.session_id[:8]}...")
+
+with col2:
+    if st.button("New Session"):
+        st.session_state.session_id = str(uuid.uuid4())
+        st.session_state.conversation_history = []
+        st.rerun()
+
+# Display user's previous sessions
+st.subheader("Your Previous Sessions")
+sessions = get_user_sessions(username)
+if sessions:
+    for session in sessions:
+        st.write(f"Session: {session['session_id'][:8]}... (Last updated: {session['last_updated']})")
+else:
+    st.write("No previous sessions found.")
+
 # User input
 message = st.text_area("Message", placeholder="Ask something...")
 
 if st.button("Send"):
     if not message.strip():
         st.error("Please enter a message")
-        # return ????
     
     # Add user message to history
     add_to_history("user", message)
@@ -169,13 +211,15 @@ if st.button("Send"):
             # Add bot response to history with user info
             add_to_history("assistant", response_text)
             
+            # Save conversation to database with session ID
+            save_conversation(username, st.session_state.session_id, st.session_state.conversation_history)
+            
             # Force a rerun to update the display
             st.rerun()
             
     except Exception as e:
         st.error(f"Error: {str(e)}")
         st.error("Response: " + str(response) if 'response' in locals() else "No response received")
-        
 
 # Display conversation history
 display_conversation()
