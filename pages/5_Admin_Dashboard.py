@@ -11,16 +11,17 @@ def get_all_conversations():
     c = conn.cursor()
     
     # Get all conversations for admin view
-    c.execute('SELECT user_id, conversation_data, last_updated FROM conversations')
+    c.execute('SELECT id, user_id, conversation_data, last_updated FROM conversations')
     results = c.fetchall()
     
     conn.close()
     
     conversations = []
-    for user_id, conversation_data, last_updated in results:
+    for id, user_id, conversation_data, last_updated in results:
         try:
             messages = json.loads(conversation_data)
             conversations.append({
+                'id': id,
                 'user_id': user_id,
                 'messages': messages,
                 'last_updated': last_updated
@@ -63,7 +64,7 @@ else:
     with tab1:
         # Create a summary table
         summary_data = []
-        for idx, conv in enumerate(conversations, 1):
+        for conv in conversations:
             user_id = conv['user_id']
             message_count = len(conv['messages'])
             last_updated = conv['last_updated']
@@ -73,7 +74,7 @@ else:
             last_message = last_message[:100] + "..." if len(last_message) > 100 else last_message
             
             summary_data.append({
-                'Conversation #': idx,
+                'ID': conv['id'],
                 'User ID': user_id,
                 'Message Count': message_count,
                 'Last Updated': last_updated,
@@ -82,14 +83,11 @@ else:
         
         df = pd.DataFrame(summary_data)
         
-        # Add a clickable column for actions
-        df['Action'] = df['Conversation #'].apply(lambda x: f'View Conversation #{x}')
-        
         # Display the dataframe with clickable links
         for idx, row in df.iterrows():
             col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 2, 1, 2, 3, 1, 1])
             with col1:
-                st.write(row['Conversation #'])
+                st.write(row['ID'])
             with col2:
                 st.write(row['User ID'])
             with col3:
@@ -101,6 +99,7 @@ else:
             with col6:
                 if st.button('View', key=f'view_{idx}'):
                     st.session_state.selected_conversation = conversations[idx]
+                    st.session_state.selected_conversation_id = row['ID']
                     st.switch_page("pages/6_View_Conversation.py")
             with col7:
                 # Create DataFrame for the conversation
@@ -141,8 +140,12 @@ else:
         selected_conv = next((conv for conv in conversations if conv['user_id'] == selected_user), None)
         
         if selected_conv:
-            st.subheader(f"Conversation with {selected_user}")
-            st.write(f"Last updated: {selected_conv['last_updated']}")
+            st.markdown(f"""
+                <div style='background-color: #2b2b2b; padding: 15px; border-radius: 10px; margin-bottom: 20px;'>
+                    <h2 style='color: white; margin: 0;'>Conversation with {selected_user}</h2>
+                    <p style='color: #cccccc; margin: 5px 0 0 0;'>Last updated: {selected_conv['last_updated']}</p>
+                </div>
+            """, unsafe_allow_html=True)
             
             # Create a container with grey background for the conversation
             st.markdown("""

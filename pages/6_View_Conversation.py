@@ -5,22 +5,23 @@ from datetime import datetime
 import pandas as pd
 import io
 
-def get_conversation_by_number(conv_number):
-    """Retrieve a conversation by its number from the database."""
+def get_conversation_by_id(conv_id):
+    """Retrieve a conversation by its ID from the database."""
     conn = sqlite3.connect('conversations.db')
     c = conn.cursor()
     
-    # Get all conversations ordered by last_updated
-    c.execute('SELECT user_id, conversation_data, last_updated FROM conversations ORDER BY last_updated DESC')
-    results = c.fetchall()
+    # Get conversation by ID
+    c.execute('SELECT user_id, conversation_data, last_updated FROM conversations WHERE id = ?', (conv_id,))
+    result = c.fetchone()
     
     conn.close()
     
-    if conv_number <= len(results):
-        user_id, conversation_data, last_updated = results[conv_number - 1]
+    if result:
+        user_id, conversation_data, last_updated = result
         try:
             messages = json.loads(conversation_data)
             return {
+                'id': conv_id,
                 'user_id': user_id,
                 'messages': messages,
                 'last_updated': last_updated
@@ -69,18 +70,28 @@ def render_page():
         st.error("No conversation selected. Please go back to the Admin Dashboard.")
         return
 
-    st.title(f"Conversation with {selected_conv['user_id']} 💬")
-    st.write(f"Last updated: {selected_conv['last_updated']}")
+    # Get the conversation ID from session state
+    conv_id = st.session_state.get('selected_conversation_id')
+
+    # Display conversation information in a more organized way
+    st.markdown(f"""
+        <div style='background-color: #2b2b2b; padding: 15px; border-radius: 10px; margin-bottom: 20px;'>
+            <h2>Conversation ID: {conv_id} with {selected_conv['user_id']} 💬</h2>
+            <p>Last updated: {selected_conv['last_updated']}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     # Add refresh and download buttons in a row
     col1, col2 = st.columns([1, 6])
     with col1:
-        if st.button("🔄 Refresh"):
-            # Reload the conversation data from database
-            refreshed_conv = get_conversation(selected_conv['user_id'])
+        # Get the current conversation ID from session state
+        current_conv_id = st.session_state.get('selected_conversation_id')
+        if st.button(f"🔄 Refresh Conversation ID: {current_conv_id}"):
+            # Reload the conversation data from database using the conversation ID
+            refreshed_conv = get_conversation_by_id(current_conv_id)
             if refreshed_conv:
                 st.session_state.selected_conversation = refreshed_conv
-            st.rerun()
+                st.rerun()
     with col2:
         # Create DataFrame for the conversation
         messages_data = []
