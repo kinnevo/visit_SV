@@ -3,6 +3,7 @@ import sqlite3
 import json
 from datetime import datetime
 import pandas as pd
+import io
 
 def get_all_conversations():
     """Retrieve all conversations from the database."""
@@ -86,7 +87,7 @@ else:
         
         # Display the dataframe with clickable links
         for idx, row in df.iterrows():
-            col1, col2, col3, col4, col5, col6 = st.columns([1, 2, 1, 2, 3, 1])
+            col1, col2, col3, col4, col5, col6, col7 = st.columns([1, 2, 1, 2, 3, 1, 1])
             with col1:
                 st.write(row['Conversation #'])
             with col2:
@@ -101,6 +102,31 @@ else:
                 if st.button('View', key=f'view_{idx}'):
                     st.session_state.selected_conversation = conversations[idx]
                     st.switch_page("pages/6_View_Conversation.py")
+            with col7:
+                # Create DataFrame for the conversation
+                messages_data = []
+                for msg in conversations[idx]['messages']:
+                    messages_data.append({
+                        'Timestamp': msg.get('timestamp', 'No timestamp'),
+                        'Role': msg['role'],
+                        'Content': msg['content']
+                    })
+                conv_df = pd.DataFrame(messages_data)
+                
+                # Create CSV in memory
+                csv_buffer = io.StringIO()
+                conv_df.to_csv(csv_buffer, index=False)
+                csv_str = csv_buffer.getvalue()
+                
+                # Create download button
+                st.download_button(
+                    label="📥",
+                    data=csv_str,
+                    file_name=f"conversation_{row['User ID']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    help="Download conversation as CSV",
+                    key=f'download_{idx}'
+                )
     
     with tab2:
         # Allow selecting a specific conversation to view
