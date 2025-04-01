@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite3
 import json
 from datetime import datetime
+import pandas as pd
+import io
 
 def get_conversation_by_number(conv_number):
     """Retrieve a conversation by its number from the database."""
@@ -69,6 +71,40 @@ def render_page():
 
     st.title(f"Conversation with {selected_conv['user_id']} 💬")
     st.write(f"Last updated: {selected_conv['last_updated']}")
+
+    # Add refresh and download buttons in a row
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if st.button("🔄 Refresh"):
+            # Reload the conversation data from database
+            refreshed_conv = get_conversation(selected_conv['user_id'])
+            if refreshed_conv:
+                st.session_state.selected_conversation = refreshed_conv
+            st.rerun()
+    with col2:
+        # Create DataFrame for the conversation
+        messages_data = []
+        for msg in selected_conv['messages']:
+            messages_data.append({
+                'Timestamp': msg.get('timestamp', 'No timestamp'),
+                'Role': msg['role'],
+                'Content': msg['content']
+            })
+        conv_df = pd.DataFrame(messages_data)
+        
+        # Create CSV in memory
+        csv_buffer = io.StringIO()
+        conv_df.to_csv(csv_buffer, index=False)
+        csv_str = csv_buffer.getvalue()
+        
+        # Create download button
+        st.download_button(
+            label="📥 Download Conversation",
+            data=csv_str,
+            file_name=f"conversation_{selected_conv['user_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            help="Download conversation as CSV"
+        )
 
     # Create a container with grey background for the conversation
     st.markdown("""
